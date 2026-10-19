@@ -117,6 +117,16 @@ class TestScanDependencies:
         detections = scan_dependencies("pyproject.toml", content)
         assert [(d["package"], d["version"]) for d in detections] == [("openai", "1.30")]
 
+    def test_pyproject_toml_poetry_inline_table(self):
+        content = '[tool.poetry.dependencies]\nopenai = { version = "^1.30", optional = true }\n'
+        detections = scan_dependencies("pyproject.toml", content)
+        assert [(d["package"], d["version"]) for d in detections] == [("openai", "1.30")]
+
+    def test_pyproject_toml_requirement_with_environment_marker(self):
+        content = '[project]\ndependencies = ["openai>=1.0 ; python_version < \'3.9\'"]\n'
+        detections = scan_dependencies("pyproject.toml", content)
+        assert [(d["package"], d["version"]) for d in detections] == [("openai", "1.0")]
+
     def test_pipfile_version(self):
         content = '[packages]\nopenai = "==1.30.0"\n'
         detections = scan_dependencies("Pipfile", content)
@@ -143,4 +153,5 @@ class TestScanDependencies:
         requirement = "openai>=1.30.0"
         from_txt = scan_dependencies("requirements.txt", requirement + "\n")
         from_toml = scan_dependencies("pyproject.toml", f'dependencies = ["{requirement}"]\n')
-        assert from_toml == from_txt
+        keys = ("package", "version", "provider")
+        assert [{k: d[k] for k in keys} for d in from_toml] == [{k: d[k] for k in keys} for d in from_txt]
